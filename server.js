@@ -39,7 +39,7 @@ app.set("io", io);
 // Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/attendance", attendanceRoutes);
-app.use("/api/students", studentRoutes);
+app.use("/api", studentRoutes);
 
 // Home Route
 app.get("/", (req, res) => {
@@ -73,6 +73,6 @@ io.on("connection", (socket) => {
 // Start Server
 const PORT = process.env.PORT || 5000;
 
-server.listen(PORT, () => {
+server.listen(PORT,"0.0.0.0", () => {
   console.log(`Server running on port ${PORT}`);
 });

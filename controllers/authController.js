@@ -123,3 +123,30 @@ exports.login = ( req, res ) => {
   );
 };
 
+exports.getAllStudents = (req, res) => {
+  db.query(
+    `SELECT 
+      id,
+      fullname,
+      reg_number,
+      phone_number,
+      parent_phone,
+      student_email,
+      qr_code
+    FROM users
+    ORDER BY fullname ASC`,
+    (err, result) => {
+      if (err) {
+        return res.status(500).json({
+          success: false,
+          message: err.message
+        });
+      }
+
+      return res.status(200).json({
+        success: true,
+        students: result
+      });
+    }
+  );
+};
