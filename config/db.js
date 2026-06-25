@@ -1,5 +1,4 @@
 require("dotenv").config();
-console.log("ALL ENV KEYS:", Object.keys(process.env));
 const mysql = require("mysql2");
 
 const db = mysql.createConnection({
