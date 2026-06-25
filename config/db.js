@@ -1,11 +1,5 @@
 require("dotenv").config();
-console.log("ALL ENV KEYS:", Object.keys(process.env));
-console.log("🔥 MYSQL ENV CHECK:");
-console.log("HOST:", process.env.MYSQLHOST);
-console.log("PORT:", process.env.MYSQLPORT);
-console.log("USER:", process.env.MYSQLUSER);
-console.log("PASS:", process.env.MYSQLPASSWORD);
-console.log("DB:", process.env.MYSQLDATABASE);
+console.log("MYSQLHOST =", process.env.MYSQLHOST);
 
 const mysql = require("mysql2");
 
