@@ -1,6 +1,8 @@
 const db = require( "../config/db" );
 const axios = require( "axios" );
 require( "dotenv" ).config();
+const { sendSMS } = require( "../services/termiiService" );
+// const twilio = require( "twilio" );
 // ===============================
 // QR ATTENDANCE SCAN
 // ===============================
@@ -151,48 +153,84 @@ exports.scanQR = ( req, res ) => {
                 }
 
                 // SMS
+                // if ( student.parent_phone ) {
+                //   // try {
+                //   //   const AfricasTalking = require( "africastalking" )( {
+                //   //     apiKey: process.env.AFRICASTALKING_API_KEY,
+                //   //     username: process.env.AFRICASTALKING_USERNAME,
+                //   //   } );
+
+                //   //   let phone = student.parent_phone;
+
+                //   //   if ( phone.startsWith( "0" ) ) {
+                //   //     phone = "+234" + phone.slice( 1 );
+                //   //   } else if ( !phone.startsWith( "+" ) ) {
+                //   //     phone = "+" + phone;
+                //   //   }
+
+                //   //   const sms = AfricasTalking.SMS;
+
+                //   //   const response = await sms.send( {
+                //   //     to: [phone],
+                //   //     message: `Dear Parent, ${student.fullname} has been marked PRESENT for ${subject}.`,
+                //   //   } );
+
+                //   //   console.log(
+                //   //     "FULL RESPONSE:",
+                //   //     JSON.stringify( response, null, 2 )
+                //   //   );
+
+                //   //   if (
+                //   //     response.SMSMessageData &&
+                //   //     response.SMSMessageData.Recipients &&
+                //   //     response.SMSMessageData.Recipients.length > 0
+                //   //   ) {
+                //   //     const recipient =
+                //   //       response.SMSMessageData.Recipients[0];
+
+                //   //     console.log( "Recipient:", recipient );
+                //   //   }
+                //   // } catch ( error ) {
+                //   //   console.log( "SMS ERROR:", error );
+                //   // }
+
+                //   try {
+                //     let phone = student.parent_phone;
+
+                //     if ( phone.startsWith( "0" ) ) {
+                //       phone = "+234" + phone.slice( 1 );
+                //     } else if ( !phone.startsWith( "+" ) ) {
+                //       phone = "+" + phone;
+                //     }
+
+                //     await sendSMS(
+                //       phone,
+                //       `Dear Parent, ${student.fullname} has been marked PRESENT for ${subject}.`
+                //     );
+                //   } catch ( err ) {
+                //     console.error( err );
+                //   }
+
+
+                // }
                 if ( student.parent_phone ) {
                   try {
-                    const AfricasTalking = require( "africastalking" )( {
-                      apiKey: process.env.AFRICASTALKING_API_KEY,
-                      username: process.env.AFRICASTALKING_USERNAME,
-                    } );
-
                     let phone = student.parent_phone;
 
                     if ( phone.startsWith( "0" ) ) {
-                      phone = "+234" + phone.slice( 1 );
-                    } else if ( !phone.startsWith( "+" ) ) {
-                      phone = "+" + phone;
+                      phone = "234" + phone.slice( 1 );
                     }
 
-                    const sms = AfricasTalking.SMS;
-
-                    const response = await sms.send( {
-                      to: [phone],
-                      message: `Dear Parent, ${student.fullname} has been marked PRESENT for ${subject}.`,
-                    } );
-
-                    console.log(
-                      "FULL RESPONSE:",
-                      JSON.stringify( response, null, 2 )
+                    await sendSMS(
+                      phone,
+                      `Dear Parent, ${student.fullname} has been marked PRESENT for ${subject}.`
                     );
 
-                    if (
-                      response.SMSMessageData &&
-                      response.SMSMessageData.Recipients &&
-                      response.SMSMessageData.Recipients.length > 0
-                    ) {
-                      const recipient =
-                        response.SMSMessageData.Recipients[0];
-
-                      console.log( "Recipient:", recipient );
-                    }
+                    console.log( "SMS sent successfully" );
                   } catch ( error ) {
-                    console.log( "SMS ERROR:", error );
+                    console.log( "SMS Error:", error.message );
                   }
                 }
-
                 return res.status( 201 ).json( {
                   success: true,
                   message:
@@ -201,6 +239,11 @@ exports.scanQR = ( req, res ) => {
                 } );
               }
             );
+
+
+
+
+
           }
         );
       }

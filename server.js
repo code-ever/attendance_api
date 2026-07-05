@@ -39,7 +39,7 @@ app.set("io", io);
 // Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/attendance", attendanceRoutes);
-app.use("/api", studentRoutes);
+app.use("/api/students", studentRoutes);
 
 // Home Route
 app.get("/", (req, res) => {
