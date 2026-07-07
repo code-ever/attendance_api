@@ -32,45 +32,33 @@ const formatPhone = ( phone ) => {
 // SEND SMS
 // ===============================
 const sendSMS = async ( to, message ) => {
+    console.log( {
+        to,
+        from: process.env.TERMII_SENDER_ID,
+        apiKey: process.env.TERMII_API_KEY ? "Loaded" : "Missing",
+        message,
+    } );
     try {
-        const phone = formatPhone( to );
-
-        console.log( "Sending SMS to:", phone );
-
-        const payload = {
-            to: phone,
-            from: process.env.TERMII_SENDER_ID,
-            sms: message,
-            type: "plain",
-            channel: "generic",
-            api_key: process.env.TERMII_API_KEY,
-        };
-
-        console.log( "Payload:", payload );
-
         const response = await axios.post(
             "https://api.ng.termii.com/api/sms/send",
-            payload,
             {
-                headers: {
-                    "Content-Type": "application/json",
-                },
+                to,
+                from: process.env.TERMII_SENDER_ID,
+                sms: message,
+                type: "plain",
+                channel: "generic",
+                api_key: process.env.TERMII_API_KEY,
             }
         );
 
-        console.log( "Termii Response:", response.data );
+        console.log( "✅ Termii Response:", response.data );
 
         return response.data;
     } catch ( error ) {
-        console.error(
-            "Termii Error:",
-            error.response?.data || error.message
-        );
+        console.error( "❌ Termii Status:", error.response?.status );
+        console.error( "❌ Termii Response:", error.response?.data );
+        console.error( "❌ Full Error:", error.message );
 
         throw error;
     }
-};
-
-module.exports = {
-    sendSMS,
 };
