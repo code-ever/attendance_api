@@ -111,28 +111,19 @@ exports.scanQR = async ( req, res ) => {
     // Send SMS
     if ( student.parent_phone ) {
       try {
-        let phone = student.parent_phone;
-
-        if ( phone.startsWith( "0" ) ) {
-          phone = "234" + phone.slice( 1 );
-        }
-
-        await sendSMS(
-          phone,
+        const smsResponse = await sendSMS(
+          student.parent_phone,
           `Dear Parent, ${student.fullname} has been marked PRESENT for ${subject}.`
         );
 
-        console.log( "SMS sent successfully" );
+        console.log( "SMS Sent:", smsResponse );
       } catch ( error ) {
-        console.log( "SMS Error:", error.message );
+        console.log(
+          "SMS Failed:",
+          error.response?.data || error.message
+        );
       }
     }
-
-    return res.status( 201 ).json( {
-      success: true,
-      message: "Attendance marked successfully",
-      attendance: attendanceData,
-    } );
 
   } catch ( error ) {
     console.error( error );
