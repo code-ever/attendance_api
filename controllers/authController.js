@@ -17,27 +17,68 @@ exports.register = async (req, res) => {
       password,
     } = req.body;
 
+    // Validate required fields
+    if (
+      !fullname ||
+      !reg_number ||
+      !phone_number ||
+      !parent_phone ||
+      !student_email ||
+      !password
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "All fields are required.",
+      });
+    }
+
+    // Check if student already exists
+    const [existingUser] = await db.query(
+      `SELECT id
+       FROM users
+       WHERE reg_number = ?
+       OR student_email = ?`,
+      [reg_number.trim(), student_email.trim()]
+    );
+
+    if (existingUser.length > 0) {
+      return res.status(409).json({
+        success: false,
+        message: "Registration number or email already exists.",
+      });
+    }
+
+    // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    // Insert student
     const [result] = await db.query(
       `INSERT INTO users
-      (fullname, reg_number, phone_number, parent_phone, student_email, password)
-      VALUES (?, ?, ?, ?, ?, ?)`,
-      [
+      (
         fullname,
         reg_number,
         phone_number,
         parent_phone,
         student_email,
+        password
+      )
+      VALUES (?, ?, ?, ?, ?, ?)`,
+      [
+        fullname.trim(),
+        reg_number.trim(),
+        phone_number.trim(),
+        parent_phone.trim(),
+        student_email.trim(),
         hashedPassword,
       ]
     );
 
     const userId = result.insertId;
 
-    // QR code contains only the registration number
+    // Generate QR Code
     const qrCode = await QRCode.toDataURL(reg_number);
 
+    // Save QR Code
     await db.query(
       "UPDATE users SET qr_code = ? WHERE id = ?",
       [qrCode, userId]
@@ -45,7 +86,7 @@ exports.register = async (req, res) => {
 
     return res.status(201).json({
       success: true,
-      message: "Student registered successfully",
+      message: "Student registered successfully.",
       qr_code: qrCode,
     });
   } catch (error) {
@@ -66,22 +107,30 @@ exports.login = async (req, res) => {
     if (!loginId || !password) {
       return res.status(400).json({
         success: false,
-        message: "Login ID and password are required",
+        message: "Login ID and password are required.",
       });
     }
 
     const [users] = await db.query(
-      `SELECT *
-       FROM users
-       WHERE reg_number = ?
-       OR student_email = ?`,
+      `SELECT
+        id,
+        fullname,
+        reg_number,
+        phone_number,
+        parent_phone,
+        student_email,
+        password,
+        qr_code
+      FROM users
+      WHERE reg_number = ?
+      OR student_email = ?`,
       [loginId.trim(), loginId.trim()]
     );
 
     if (users.length === 0) {
-      return res.status(400).json({
+      return res.status(401).json({
         success: false,
-        message: "Invalid credentials",
+        message: "Invalid credentials.",
       });
     }
 
@@ -90,9 +139,9 @@ exports.login = async (req, res) => {
     const match = await bcrypt.compare(password, user.password);
 
     if (!match) {
-      return res.status(400).json({
+      return res.status(401).json({
         success: false,
-        message: "Invalid credentials",
+        message: "Invalid credentials.",
       });
     }
 
@@ -107,8 +156,12 @@ exports.login = async (req, res) => {
       }
     );
 
+    // Remove password before returning user
+    delete user.password;
+
     return res.status(200).json({
       success: true,
+      message: "Login successful.",
       token,
       user,
     });
