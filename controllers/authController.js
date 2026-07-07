@@ -1,9 +1,12 @@
-const bcrypt = require( "bcryptjs" );
-const db = require( "../config/db" );
-const jwt = require( "jsonwebtoken" );
-const QRCode = require( "qrcode" );
+const bcrypt = require("bcryptjs");
+const db = require("../config/db");
+const jwt = require("jsonwebtoken");
+const QRCode = require("qrcode");
 
-exports.register = async ( req, res ) => {
+// ===============================
+// REGISTER
+// ===============================
+exports.register = async (req, res) => {
   try {
     const {
       fullname,
@@ -11,13 +14,13 @@ exports.register = async ( req, res ) => {
       phone_number,
       parent_phone,
       student_email,
-      password
+      password,
     } = req.body;
 
-    const hashedPassword = await bcrypt.hash( password, 10 );
+    const hashedPassword = await bcrypt.hash(password, 10);
 
-    db.query(
-      `INSERT INTO users 
+    const [result] = await db.query(
+      `INSERT INTO users
       (fullname, reg_number, phone_number, parent_phone, student_email, password)
       VALUES (?, ?, ?, ?, ?, ?)`,
       [
@@ -26,121 +29,124 @@ exports.register = async ( req, res ) => {
         phone_number,
         parent_phone,
         student_email,
-        hashedPassword
-      ],
-      async ( err, result ) => {
-        if ( err ) {
-          return res.status( 400 ).json( {
-            success: false,
-            message: err.message
-          } );
-        }
+        hashedPassword,
+      ]
+    );
 
-        const userId = result.insertId;
+    const userId = result.insertId;
 
-        // 🔥 QR CONTENT (IMPORTANT)
-        const qrCode = await QRCode.toDataURL( reg_number );
+    // QR code contains only the registration number
+    const qrCode = await QRCode.toDataURL(reg_number);
 
-        await db.query(
-          "UPDATE users SET qr_code = ? WHERE id = ?",
-          [qrCode, userId]
-        );
+    await db.query(
+      "UPDATE users SET qr_code = ? WHERE id = ?",
+      [qrCode, userId]
+    );
 
-        return res.status( 201 ).json( {
-          success: true,
-          message: "Student registered successfully",
-          qr_code: qrCode
-        } );
+    return res.status(201).json({
+      success: true,
+      message: "Student registered successfully",
+      qr_code: qrCode,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+// ===============================
+// LOGIN
+// ===============================
+exports.login = async (req, res) => {
+  try {
+    const { loginId, password } = req.body;
+
+    if (!loginId || !password) {
+      return res.status(400).json({
+        success: false,
+        message: "Login ID and password are required",
+      });
+    }
+
+    const [users] = await db.query(
+      `SELECT *
+       FROM users
+       WHERE reg_number = ?
+       OR student_email = ?`,
+      [loginId.trim(), loginId.trim()]
+    );
+
+    if (users.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid credentials",
+      });
+    }
+
+    const user = users[0];
+
+    const match = await bcrypt.compare(password, user.password);
+
+    if (!match) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid credentials",
+      });
+    }
+
+    const token = jwt.sign(
+      {
+        id: user.id,
+        reg_number: user.reg_number,
+      },
+      process.env.JWT_SECRET,
+      {
+        expiresIn: "7d",
       }
     );
-  } catch ( error ) {
-    return res.status( 500 ).json( {
+
+    return res.status(200).json({
+      success: true,
+      token,
+      user,
+    });
+  } catch (error) {
+    return res.status(500).json({
       success: false,
-      message: error.message
-    } );
+      message: error.message,
+    });
   }
 };
 
-exports.login = ( req, res ) => {
-  const { loginId, password } = req.body;
+// ===============================
+// GET ALL STUDENTS
+// ===============================
+exports.getAllStudents = async (req, res) => {
+  try {
+    const [students] = await db.query(
+      `SELECT
+        id,
+        fullname,
+        reg_number,
+        phone_number,
+        parent_phone,
+        student_email,
+        qr_code
+      FROM users
+      ORDER BY fullname ASC`
+    );
 
-  if ( !loginId || !password ) {
-    return res.status( 400 ).json( {
-      message: "Login ID and password are required"
-    } );
+    return res.status(200).json({
+      success: true,
+      count: students.length,
+      students,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
   }
-
-  db.query(
-    `SELECT * FROM users 
-     WHERE reg_number = ? 
-     OR student_email = ?`,
-    [loginId.trim(), loginId.trim()],
-    async ( err, result ) => {
-      if ( err ) {
-        return res.status( 500 ).json( {
-          message: "Server error",
-          error: err.message
-        } );
-      }
-
-      if ( result.length === 0 ) {
-        return res.status( 400 ).json( {
-          message: "Invalid credentials"
-        } );
-      }
-
-      const user = result[0];
-
-      const match = await bcrypt.compare( password, user.password );
-
-      if ( !match ) {
-        return res.status( 400 ).json( {
-          message: "Invalid credentials"
-        } );
-      }
-
-      const token = jwt.sign(
-        {
-          id: user.id,
-          reg_number: user.reg_number
-        },
-        process.env.JWT_SECRET,
-        { expiresIn: "7d" }
-      );
-
-      return res.json( {
-        success: true,
-        token,
-        user
-      } );
-    }
-  );
-};
-
-exports.getAllStudents = ( req, res ) => {
-  db.query(
-    `SELECT 
-      id,
-      fullname,
-      reg_number,
-      phone_number,
-      parent_phone,
-      student_email,
-      qr_code
-    FROM users
-    ORDER BY fullname ASC`,
-    ( err, result ) => {
-      if ( err ) {
-        return res.status( 500 ).json( {
-          success: false,
-          message: err.message
-        } );
-      }
-
-      return res.status( 200 ).json( {
-        success: true,
-        students: result
-      } );
-    }
-  );
 };
