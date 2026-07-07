@@ -40,13 +40,13 @@ const sendSMS = async (to, message) => {
   // Format the phone number before sending
   const formattedPhone = formatPhone(to);
 
-  console.log({
-    originalPhone: to,
-    formattedPhone,
-    from: process.env.TERMII_SENDER_ID,
-    apiKey: process.env.TERMII_API_KEY ? "Loaded" : "Missing",
-    message,
-  });
+//   console.log({
+//     originalPhone: to,
+//     formattedPhone,
+//     from: process.env.TERMII_SENDER_ID,
+//     apiKey: process.env.TERMII_API_KEY ? "Loaded" : "Missing",
+//     message,
+//   });
 
   try {
     const response = await axios.post(
