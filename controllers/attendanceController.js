@@ -109,7 +109,11 @@ exports.scanQR = async ( req, res ) => {
     }
 
     // Send SMS
+    // Send SMS
+    console.log( "Parent Phone:", student.parent_phone );
+
     if ( student.parent_phone ) {
+      console.log( "Sending SMS..." );
       try {
         const smsResponse = await sendSMS(
           student.parent_phone,
@@ -118,12 +122,15 @@ exports.scanQR = async ( req, res ) => {
 
         console.log( "SMS Sent:", smsResponse );
       } catch ( error ) {
-        console.log(
-          "SMS Failed:",
-          error.response?.data || error.message
-        );
+        console.error( "SMS Error:", error.response?.data || error.message );
       }
     }
+    // IMPORTANT: Return a response to the frontend
+    return res.status( 201 ).json( {
+      success: true,
+      message: "Attendance marked successfully.",
+      attendance: attendanceData,
+    } );
 
   } catch ( error ) {
     console.error( error );
