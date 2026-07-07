@@ -39,16 +39,10 @@ exports.register = async ( req, res ) => {
         const userId = result.insertId;
 
         // 🔥 QR CONTENT (IMPORTANT)
-        const qrPayload = {
-          user_id: userId,
-          fullname,
-          reg_number
-        };
+        const qrCode = await QRCode.toDataURL( reg_number );
 
-        const qrCode = await QRCode.toDataURL( JSON.stringify( qrPayload ) );
-
-        db.query(
-          "UPDATE users SET qr_code=? WHERE id=?",
+        await db.query(
+          "UPDATE users SET qr_code = ? WHERE id = ?",
           [qrCode, userId]
         );
 
@@ -123,7 +117,7 @@ exports.login = ( req, res ) => {
   );
 };
 
-exports.getAllStudents = (req, res) => {
+exports.getAllStudents = ( req, res ) => {
   db.query(
     `SELECT 
       id,
@@ -135,18 +129,18 @@ exports.getAllStudents = (req, res) => {
       qr_code
     FROM users
     ORDER BY fullname ASC`,
-    (err, result) => {
-      if (err) {
-        return res.status(500).json({
+    ( err, result ) => {
+      if ( err ) {
+        return res.status( 500 ).json( {
           success: false,
           message: err.message
-        });
+        } );
       }
 
-      return res.status(200).json({
+      return res.status( 200 ).json( {
         success: true,
         students: result
-      });
+      } );
     }
   );
 };
