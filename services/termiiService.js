@@ -62,3 +62,5 @@ const sendSMS = async ( to, message ) => {
         throw error;
     }
 };
+
+exports.sendSMS = sendSMS;
